@@ -1,92 +1,69 @@
+// from data.js
+var tableData = data;
 
-// References to the tbody element, input fields and buttons
-let tbody = document.querySelector("tbody");
-let dateInput = d3.select("#date");
-let cityInput = d3.select("#city");
-let stateInput = d3.select("#state");
-let countryInput = d3.select("#country");
-let shapeInput = d3.select("#shape");
-let searchBtn = d3.select("#search");
-let resetBtn = d3.select("#reset");
+// get table references
+var tbody = d3.select("tbody");
 
-// Add event listener to the searchButton and resetButton; call functions when clicked
-searchBtn.addEventListener("click", handleSearchButtonClick);
-resetBtn.addEventListener("click", handleResetButtonClick);
+function buildTable(data) {
+  // First, clear out any existing data
+  tbody.html("");
 
-// Set filteredData to dataSet
-let ufoData = data;
+  // Next, loop through each object in the data
+  // and append a row and cells for each value in the row
+  data.forEach((dataRow) => {
+    // Append a row to the table body
+    var row = tbody.append("tr");
 
-// renderTable renders the filtered data to the tbody
-function renderTable() {
-  tbody.innerHTML = "";
-  for (let i = 0; i < ufoData.length; i++) {
+    // Loop through each field in the dataRow and add
+    // each value as a table cell (td)
+    Object.values(dataRow).forEach((val) => {
+      var cell = row.append("td");
+      cell.text(val);
+    });
+  });
+}
 
-    // Get the current sighting object and its fields
-    let sighting = ufoData[i];
-    let fields = Object.keys(sighting);
+// Keep Track of all filters
+var filters = {};
 
-    // Create a new row in the tbody, set the index to be i + startingIndex
-    let row = tbody.insertRow(i);
-    for (let j = 0; j < fields.length; j++) {
+function updateFilters() {
 
-      // For every field in the sighting object, create a new cell and set its inner text to be the current value at the current sighting's field
-      let field = fields[j];
-      let cell = row.insertCell(j);
-      cell.innerText = sighting[field];
-    }
+  // Save the element, value, and id of the filter that was changed
+  var changedElement = d3.select(this).select("input");
+  var elementValue = changedElement.property("value");
+  var filterId = changedElement.attr("id");
+
+  // If a filter value was entered then add that filterId and value
+  // to the filters list. Otherwise, clear that filter from the filters object
+  if (elementValue) {
+    filters[filterId] = elementValue;
   }
+  else {
+    delete filters[filterId];
+  }
+
+  // Call function to apply all filters and rebuild the table
+  filterTable();
+
 }
 
- //  Search items with formatted user's search terms 
-function handleSearchButtonClick() {
-  let searchDate = $dateInput.value.trim();
-  if (searchDate != "") {
-    filteredData = dataSet.filter(function (sighting) {
-      let sightingDate = sighting.datetime;
-      return sightingDate === filterDate;
-    });
-  };
-  let searchCity = $cityInput.value.trim().toLowerCase();
-  if (searchCity != "") {
-    filteredData = filteredData.filter(function (sighting) {
-      let sightingCity = sighting.city;
-      return sightingCity === filterCity;
-    });
-  };
-  let searchState = $stateInput.value.trim().toLowerCase();
-  if (searchState != "") {
-    filteredData = filteredData.filter(function (sighting) {
-      let sightingState = sighting.state;
-      return sightingState === filterState;
-    });
-  };
-  let searchCountry = $countryInput.value.trim().toLowerCase();
-  if (searchCountry != "") {
-    filteredData = filteredData.filter(function (sighting) {
-      let sightingCountry = sighting.country;
-      return sightingCountry === filterCountry;
-    });
-  };
-  let searchShape = $shapeInput.value.trim().toLowerCase();
-  if (searchShape != "") {
-    filteredData = filteredData.filter(function (sighting) {
-      let sightingShape = sighting.shape;
-      return sightingShape === filterShape;
-    });
-  };
-  renderTable();
-};
+function filterTable() {
 
-// Reset the data and search form after a search
-function handleResetButtonClick() {
-  filteredData = data;
-  $dateInput.value = "";
-  $cityInput.value = "";
-  $stateInput.value = "";
-  $countryInput.value = "";
-  $shapeInput.value = "";
-  renderTable();
+  // Set the filteredData to the tableData
+  let filteredData = tableData;
+
+  // Loop through all of the filters and keep any data that
+  // matches the filter values
+  Object.entries(filters).forEach(([key, value]) => {
+    filteredData = filteredData.filter(row => row[key] === value);
+  });
+
+  // Finally, rebuild the table using the filtered Data
+  buildTable(filteredData);
 }
 
-// Render the table for the first time on page load
-renderTable();
+// Attach an event to listen for changes to each filter
+d3.selectAll(".filter").on("change", updateFilters);
+
+// Build the table when the page loads
+buildTable(tableData);
